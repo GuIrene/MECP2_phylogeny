@@ -1,0 +1,106 @@
+---
+title: "epistate_heatmaps"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library("ComplexHeatmap")
+library("data.table")
+library("rjson")
+library("stringr")
+library("circlize")
+library("RColorBrewer")
+
+
+
+bool_colors <- c("True"="black", "False"="grey")
+
+heatmap_colors <- colorRamp2(c(0, 0.5, 1), c("#377EB8", "white", "#E41A1C"))
+```
+
+```{r}
+npp_eukaryotes = read.csv("/Users/ireneu/berman_lab/Rett/npp_eukaryotes_by_corr_to_MECP2.csv")
+
+mammal_correlations =  read.csv("/Users/ireneu/berman_lab/Rett/mammals_mecp2_correlation.csv")
+npp_mammals <-  read.csv("/Users/ireneu/berman_lab/Rett/npp_mammals_by_corr_to_MECP2.csv")
+
+```
+
+
+```{r}
+eukaryote_correlations =  read.csv("/Users/ireneu/berman_lab/Rett/eukaryotes_mecp2_correlation.csv")
+clade_anno = read.csv("/Users/ireneu/berman_lab/Rett/npp_clade_list.txt", header=F, col.names = c("clade"))
+
+```
+
+
+
+```{r}
+heatmap_colors <- colorRamp2(c(-2, 2), c( "white", '#01013F'))
+
+rel_rows <- nrow(npp_eukaryotes)
+clades <- HeatmapAnnotation(Clade = clade_anno$clade, col=list(Clade = c("Mammals"="#E27D60", "Chordates"="#C38D9E", "Metazoans"="#B76D68","Plants"="#41B3A3", "Fungi"="#E8A87C",
+                                                                  "Other eukaryotes" ="#55BCC9")), show_annotation_name = F)
+ha = rowAnnotation(Pearson = anno_points(eukaryote_correlations$Correlation[1:rel_rows]), width = unit(2.8, "cm"))
+
+ht <- Heatmap(npp_eukaryotes[1:rel_rows,], name="Normalized conservation", col = heatmap_colors, show_row_names = FALSE, show_column_names = FALSE, cluster_column_slices = F, cluster_columns = T,
+                  right_annotation = ha, top_annotation = clades, row_title = "    ", column_title = "    ",
+              column_split =  factor(clade_anno$clade, levels = c("Mammals", "Chordates", "Metazoans","Plants", "Fungi","Other eukaryotes")), cluster_rows = F, 
+              row_split = factor(c(rep("Top 200", 201), rep("Other", rel_rows-201)), levels=c("Top 200", "Other")), 
+              show_column_dend = FALSE, na_col = "black", heatmap_width = unit(15, "cm"), heatmap_height = unit(20, "cm"), use_raster = TRUE, 
+        raster_device = "png")
+
+#pdf("/Users/ireneu/berman_lab/Rett/supp/eukaryotes_npp_@png.pdf", width=11.7, height = 8.3)
+draw(ht)
+#dev.off()
+```
+
+
+```{r}
+heatmap_colors <- colorRamp2(c(-2, 2), c( "white", '#01013F'))
+
+rel_rows <- 5001
+clades <- HeatmapAnnotation(Clade = rep("Mammals", ncol(mammals)), col=list(Clade = c("Mammals"="#E27D60", "Chordates"="#C38D9E", "Metazoans"="#B76D68","Plants"="#41B3A3", "Fungi"="#E8A87C",
+                                                                  "Other eukaryotes" ="#55BCC9")), show_annotation_name = F)
+ha = rowAnnotation(Pearson = anno_points(mammal_correlations$Correlation[1:rel_rows]),  width = unit(2.8, "cm"))
+
+ht <- Heatmap(t(scale(t(npp_mammals[1:rel_rows,]))), name="Normalized conservation", col = heatmap_colors, show_row_names = FALSE, show_column_names = FALSE, cluster_column_slices = F, cluster_columns = T,
+                  right_annotation = ha, top_annotation = clades, row_title = "    ", column_title = "    ", cluster_rows = F, 
+              row_split = factor(c(rep("Top 200", 201), rep("Other", rel_rows-201)), levels=c("Top 200", "Other")), 
+              show_column_dend = FALSE, na_col = "black", heatmap_width = unit(15, "cm"), heatmap_height = unit(12, "cm"), use_raster = TRUE, 
+        raster_device = "tiff")
+#pdf("/Users/ireneu/berman_lab/Rett/supp/mammals_npp_scaled_5k.pdf", width=11.7, height = 8.3)
+
+draw(ht)
+#dev.off()
+```
+
+
+
+```{r}
+#heatmap_colors <- colorRamp2(c(-2.5, 2.5), c( "white", '#2e4179'))
+heatmap_colors <- colorRamp2(c(-2, 0, 2), c("#377EB8", "white", "#E41A1C"))
+clades <- HeatmapAnnotation(Clade = clade_anno$clade, col=list(Clade = c("Mammals"="#E27D60", "Chordates"="#C38D9E", "Metazoans"="#B76D68","Plants"="#41B3A3", "Fungi"="#E8A87C",
+                                                                  "Other eukaryotes" ="#55BCC9")), show_annotation_name = F)
+
+rel_rows <- 5001
+ha = rowAnnotation(Pearson = anno_points(eukaryote_correlations$Correlation[1:rel_rows]), width = unit(2.8, "cm"))
+
+ht <- Heatmap(npp_eukaryotes[1:rel_rows,], name="Normalized conservation", col = heatmap_colors, show_row_names = FALSE, show_column_names = FALSE, cluster_column_slices = F, cluster_columns = T,
+                  right_annotation = ha, top_annotation = clades, row_title = "    ", column_title = "    ",
+              column_split =  factor(clade_anno$clade, levels = c("Mammals", "Chordates", "Metazoans","Plants", "Fungi","Other eukaryotes")), 
+              cluster_rows = F, 
+              row_split = factor(c(rep("Top 200", 201), rep("Other", rel_rows-201)), levels=c("Top 200", "Other")), 
+              show_column_dend = FALSE, na_col = "black", heatmap_width = unit(15, "cm"), heatmap_height = unit(20, "cm"), use_raster = TRUE, 
+        raster_device = "tiff")
+pdf("/Users/ireneu/berman_lab/Rett/supp/eukaryotes_npp_5k_color_scale_red.pdf", width=11.7, height = 8.3)
+
+draw(ht)
+dev.off()
+```
+
+ 
